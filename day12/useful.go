@@ -74,6 +74,6 @@ func getInputAsRuneMatrix(input string) [][]rune {
 	return output
 }
 
-var orthDirections = []Location{{1,0}, {0,1}, {-1,0}, {0,-1}}
+var orthDirections = []Location{{-1,0}, {0,1}, {1,0}, {0,-1}}
 var diagonalDirections = []Location{{1,1}, {1,-1}, {-1,1}, {-1,-1}}
 var allDirections = append(orthDirections, diagonalDirections...)

@@ -10,73 +10,117 @@ func main() {
 	fmt.Println("star2", star2())
 }
 
-type Stone struct {
-	val   int
-	split bool
-}
-
 var inPlot = []Location{}
 
 func star1() int {
 	farm := getInputAsRuneMatrix(input)
 	fence := 0
 	for i, farmRow := range farm {
-		for j, _ := range farmRow {
+		for j := range farmRow {
 			if slices.ContainsFunc(inPlot, func(loc2 Location) bool { return locationsEqual(Location{i, j}, loc2) }) {
 				continue
 			}
-			area, perim := countPerimAndArea(Location{i, j}, farm)
-			fence += area * perim
+			area, perims := getAreaAndPerim(Location{i, j}, farm)
+			fence += area * len(perims)
 		}
 	}
 	return fence
 }
 
-func countPerimAndArea(loc Location, farm [][]rune) (int, int) {
+type Edge struct {
+	loc Location
+	dir Location
+}
+func getAreaAndPerim(loc Location, farm [][]rune) (int, []Edge) {
 	area := 1
-	perim := 0
+	perims := []Edge{}
 	inPlot = append(inPlot, loc)
 	for _, dir := range orthDirections {
-		if loc.i+dir.i < 0 || loc.i+dir.i >= len(farm) {
-			perim++
-			continue
-		}
-		if (loc.j+dir.j < 0 || loc.j+dir.j >= len(farm[0])) {
-			perim++
-			continue
-		}
 		newLocation := Location{loc.i + dir.i, loc.j + dir.j}
-		if farm[loc.i][loc.j] != farm[newLocation.i][newLocation.j] {
-			perim++
+		if newLocation.i < 0 || newLocation.i >= len(farm) || newLocation.j < 0 || newLocation.j >= len(farm[0]) || farm[loc.i][loc.j] != farm[newLocation.i][newLocation.j] {
+			perims = append(perims, Edge{loc, dir})
 			continue
 		}
 		if slices.ContainsFunc(inPlot, func(loc2 Location) bool { return locationsEqual(newLocation, loc2) }) {
 			continue
 		}
-		newArea, perimNewLoc := countPerimAndArea(newLocation, farm)
-		area+=newArea
-		perim += perimNewLoc
+		newArea, perimNewLoc := getAreaAndPerim(newLocation, farm)
+		area += newArea
+		perims = append(perims, perimNewLoc...)
 	}
-	return area, perim
+	return area, perims
 }
-
-var plotId = 1
-var plotSideMapI = map[int][]int{}
-var plotSideMapJ = map[int][]int{}
 
 func star2() int {
 	inPlot = []Location{}
 	farm := getInputAsRuneMatrix(input)
 	fence := 0
 	for i, farmRow := range farm {
-		for j, _ := range farmRow {
+		for j := range farmRow {
 			if slices.ContainsFunc(inPlot, func(loc2 Location) bool { return locationsEqual(Location{i, j}, loc2) }) {
 				continue
 			}
-			area, perim := countPerimAndArea(Location{i, j}, farm)
-			fence += area * perim
-			plotId++
+			area, perims := getAreaAndPerim(Location{i, j}, farm)
+			fenceForPlot := 0
+			for _, dir := range orthDirections {
+				edgeInDir := []Edge{}
+				for _,p := range perims {
+					if p.dir.i == dir.i && p.dir.j == dir.j {
+						edgeInDir = append(edgeInDir, p)
+						continue
+					}
+				}
+				if (len(edgeInDir) == 0) {
+					continue
+				}
+
+				var sortFunc func (e1 Edge, e2 Edge) int
+				isI := dir.i == 1 || dir.i == -1
+				if isI {
+					sortFunc = iSortFunc
+				} else {
+					sortFunc = jSortFunc
+				}
+
+				slices.SortFunc(edgeInDir, sortFunc)
+
+				fenceForPlot++
+				curEdge := edgeInDir[0]
+				for r,p := range edgeInDir {
+					if r == 0 {
+						continue
+					}
+					if isI && (p.loc.i == curEdge.loc.i && p.loc.j == curEdge.loc.j + 1) {
+						curEdge = p
+						continue
+					}
+					if !isI && (p.loc.j == curEdge.loc.j && p.loc.i == curEdge.loc.i + 1) {
+						curEdge = p
+						continue
+					}
+					fenceForPlot++
+					curEdge = p
+				}
+			}
+			
+			fence += fenceForPlot*area
 		}
 	}
 	return fence
+}
+
+func iSortFunc(e1 Edge, e2 Edge) int {
+	if (e1.loc.i > e2.loc.i) {return 1}
+	if (e2.loc.i > e1.loc.i) {return -1}
+	if (e1.loc.j > e2.loc.j) {return 1}
+	if (e2.loc.j > e1.loc.j) {return -1}
+	return 0
+}
+
+func jSortFunc(e1 Edge, e2 Edge) int {
+	if (e1.loc.j > e2.loc.j) {return 1}
+	if (e2.loc.j > e1.loc.j) {return -1}
+	if (e1.loc.i > e2.loc.i) {return 1}
+	if (e2.loc.i > e1.loc.i) {return -1}
+	return 0
 }
