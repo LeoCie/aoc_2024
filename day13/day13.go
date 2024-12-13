@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"strings"
-	"gonum.org/v1/gonum/mat"
 )
 
 
@@ -52,21 +50,20 @@ func star2() int {
 }
 
 func solveEquation(aButtonXMove, bButtonXMove, aButtonYMove, bButtonYMove, xPrize, yPrize float64) int {
-	A := mat.NewDense(2, 2, []float64{aButtonXMove, bButtonXMove, aButtonYMove, bButtonYMove})
-    b := mat.NewVecDense(2, []float64{xPrize, yPrize})
+	B := (yPrize - (xPrize*aButtonYMove)/(aButtonXMove))/(bButtonYMove - (bButtonXMove*aButtonYMove)/aButtonXMove)
+    A := (xPrize - B*bButtonXMove)/aButtonXMove
 
-    var x mat.VecDense
-    if err := x.SolveVec(A, b); err != nil {
-        fmt.Println("failed, non solvable")
-		return -1
-    }
+	a:= int(A)
+	b:= int(B)
 
-	if x.At(0,0) != math.Trunc(x.At(0,0)) || x.At(1,0) != math.Trunc(x.At(1,0)) {
-		fmt.Println("failed, non int")
+	if B != float64(b)  || A != float64(a) {
 		return -1
 	}
-	fmt.Println("passed", x)
-    return int(x.At(0,0) * 3 + x.At(1,0))
+	if (b * int(bButtonXMove) + a * int(aButtonXMove) != int(xPrize) || b * int(bButtonYMove) + a * int(aButtonYMove) != int(yPrize)) {
+		return -1
+	}
+
+    return getCost(a,b)
 }
 
 func getCost(aPress int, bPress int) int {
